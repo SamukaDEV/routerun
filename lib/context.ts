@@ -17,7 +17,7 @@ export function createContext(
         counter: 0,
         hit: 0,
         ms: 0,
-        cookies: {} as BunRequest["cookies"],
+        cookies: request.cookies,
     }
 
     const responseState: { current?: Response } = {};

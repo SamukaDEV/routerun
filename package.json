@@ -1,6 +1,6 @@
 {
   "name": "routerun",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A router to bun",
   "directories": {
     "lib": "lib"
