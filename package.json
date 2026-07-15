@@ -1,10 +1,11 @@
 {
   "name": "routerun",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A router to bun",
   "directories": {
     "lib": "lib"
   },
+  "main": "lib/index.ts",
   "scripts": {
     "run-tests": "bun test"
   },
