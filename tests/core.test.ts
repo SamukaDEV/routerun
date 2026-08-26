@@ -124,4 +124,23 @@ describe("Router", () => {
         ]);
     });
 
+    test("printRoutes without colors", () => {
+        const app = new Router();
+        app.get("/users", (req, res) => res.text("ok"));
+        app.post("/users/:id", (req, res) => res.text("ok"));
+
+        expect(app.printRoutes()).toBe("GET      /users\nPOST     /users/:id");
+    });
+
+    test("printRoutes with colors", () => {
+        const app = new Router();
+        app.get("/users", (req, res) => res.text("ok"));
+        app.post("/users/:id", (req, res) => res.text("ok"));
+
+        const output = app.printRoutes({ colors: true });
+        expect(output).toContain("\x1b[32mGET\x1b[0m");
+        expect(output).toContain("\x1b[33mPOST\x1b[0m");
+        expect(output).toContain("\x1b[34m:id\x1b[33m");
+    });
+
 });

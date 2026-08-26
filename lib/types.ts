@@ -79,6 +79,11 @@ export interface RouteInfo {
     middlewares: string[];
 }
 
+export interface PrintRoutesOptions {
+    colors?: boolean;
+    sort?: boolean;
+}
+
 export interface CompiledRoute {
     method: Method;
     path: string;

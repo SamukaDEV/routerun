@@ -14,7 +14,8 @@ import type {
     RouterOptions,
     StaticBundle,
     NextFunction,
-    BunRoutes
+    BunRoutes,
+    PrintRoutesOptions
 } from "./types";
 import {
     flattenHandlers,
@@ -950,9 +951,47 @@ export class Router {
         return routes satisfies BunRoutes;
     }
 
-    printRoutes() {
-        const lines = this.compileEndpoints("/").map(endpoint => `${endpoint.method.padEnd(8)} ${endpoint.path}`);
-        return lines.sort().join("\n");
+    printRoutes(options?: PrintRoutesOptions) {
+        const METHOD_COLORS: Record<string, string> = {
+            GET: "\x1b[32m", // verde
+            POST: "\x1b[33m", // amarelo
+            DELETE: "\x1b[31m", // vermelho
+            PATCH: "\x1b[38;5;208m", // laranja
+            PUT: "\x1b[35m", // roxo
+            OPTIONS: "\x1b[36m", // ciano (outra cor)
+            HEAD: "\x1b[90m", // cinza
+        };
+        const ANSI_RESET = "\x1b[0m";
+        const PATH_COLOR = "\x1b[33m"; // amarelo
+        const PARAM_COLOR = "\x1b[34m"; // azul
+
+        const sortedEndpoints = this.compileEndpoints("/").sort((a, b) => {
+            const lineA = `${a.method.padEnd(8)} ${a.path}`;
+            const lineB = `${b.method.padEnd(8)} ${b.path}`;
+            return lineA.localeCompare(lineB);
+        });
+
+        const endpoints = options?.sort === true ? sortedEndpoints : this.compileEndpoints("/");
+
+        const lines = endpoints.map(endpoint => {
+            if (options?.colors) {
+                const methodColor = METHOD_COLORS[endpoint.method.toUpperCase()] ?? "\x1b[37m";
+                const coloredMethod = `${methodColor}${endpoint.method}${ANSI_RESET}`;
+                const spacing = " ".repeat(Math.max(1, 8 - endpoint.method.length + 1));
+
+                const coloredPath = endpoint.path.replace(
+                    /(:[a-zA-Z0-9_]+|\*[\w]*)/g,
+                    match => `${PARAM_COLOR}${match}${PATH_COLOR}`
+                );
+                const fullColoredPath = `${PATH_COLOR}${coloredPath}${ANSI_RESET}`;
+
+                return `${coloredMethod}${spacing}${fullColoredPath}`;
+            }
+
+            return `${endpoint.method.padEnd(8)} ${endpoint.path}`;
+        });
+
+        return lines.join("\n");
     }
 
     getRoutes(): RouteInfo[] {
