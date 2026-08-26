@@ -985,10 +985,10 @@ export class Router {
                 );
                 const fullColoredPath = `${PATH_COLOR}${coloredPath}${ANSI_RESET}`;
 
-                return `${coloredMethod}${spacing}${fullColoredPath}`;
+                return `[${coloredMethod}]${spacing}${fullColoredPath}`;
             }
 
-            return `${endpoint.method.padEnd(8)} ${endpoint.path}`;
+            return `[${endpoint.method.padEnd(8)}] ${endpoint.path}`;
         });
 
         return lines.join("\n");
