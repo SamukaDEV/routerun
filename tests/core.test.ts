@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import Router, { type Middleware, type RouteHandler } from "../lib";
+import Router, { LoggerMiddleware, type Middleware, type RouteHandler } from "../lib";
 
 describe("Router", () => {
 
@@ -129,7 +129,7 @@ describe("Router", () => {
         app.get("/users", (req, res) => res.text("ok"));
         app.post("/users/:id", (req, res) => res.text("ok"));
 
-        expect(app.printRoutes()).toBe("GET      /users\nPOST     /users/:id");
+        expect(app.printRoutes()).toBe("[GET     ] /users\n[POST    ] /users/:id");
     });
 
     test("printRoutes with colors", () => {
@@ -141,6 +141,32 @@ describe("Router", () => {
         expect(output).toContain("\x1b[32mGET\x1b[0m");
         expect(output).toContain("\x1b[33mPOST\x1b[0m");
         expect(output).toContain("\x1b[34m:id\x1b[33m");
+    });
+
+    test("LoggerMiddleware logs requests", async () => {
+        const logs: string[] = [];
+        const app = new Router();
+
+        app.use(LoggerMiddleware({
+            colors: false,
+            timestamp: true,
+            output: (msg) => logs.push(msg),
+        }));
+
+        app.get("/test", (req, res) => res.json({ ok: true }));
+
+        const routes = app.toBunRoutes();
+        const handler = routes["/test"]?.GET;
+        expect(handler).toBeDefined();
+
+        const req = new Request("http://localhost/test") as any;
+        req.params = {};
+        await handler!(req);
+
+        expect(logs.length).toBe(1);
+        expect(logs[0]).toContain("[GET]");
+        expect(logs[0]).toContain("/test");
+        expect(logs[0]).toContain("[200]");
     });
 
 });

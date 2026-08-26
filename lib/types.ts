@@ -84,6 +84,12 @@ export interface PrintRoutesOptions {
     sort?: boolean;
 }
 
+export interface LoggerMiddlewareOptions {
+    timestamp?: boolean;
+    colors?: boolean;
+    output?: (message: string) => void;
+}
+
 export interface CompiledRoute {
     method: Method;
     path: string;
