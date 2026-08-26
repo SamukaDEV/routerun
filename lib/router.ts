@@ -882,27 +882,29 @@ export class Router {
                 .filter(value => value.startsWith(":"))
                 .map(value => value.slice(1));
 
+            const __internal__ParamMiddleware: RouteHandler = async (req, res, next) => {
+                const selected: Record<string, string> = {};
+                for (const key of routeParamNames) {
+                    if (req.params[key] !== undefined) {
+                        selected[key] = req.params[key];
+                    }
+                }
+
+                const cache = (req as IRequest & { _paramCache?: ParamCache })._paramCache;
+                const snapshot = cache ? { ...cache } : undefined;
+
+                try {
+                    await this.runParamCallbacks(req, res, selected);
+                } finally {
+                    (req as IRequest & { _paramCache?: ParamCache })._paramCache = snapshot;
+                }
+
+                return next();
+            }
+
             const paramMiddleware: RouteHandler[] = routeParamNames.length === 0
                 ? []
-                : [async (req, res, next) => {
-                    const selected: Record<string, string> = {};
-                    for (const key of routeParamNames) {
-                        if (req.params[key] !== undefined) {
-                            selected[key] = req.params[key];
-                        }
-                    }
-
-                    const cache = (req as IRequest & { _paramCache?: ParamCache })._paramCache;
-                    const snapshot = cache ? { ...cache } : undefined;
-
-                    try {
-                        await this.runParamCallbacks(req, res, selected);
-                    } finally {
-                        (req as IRequest & { _paramCache?: ParamCache })._paramCache = snapshot;
-                    }
-
-                    return next();
-                }];
+                : [__internal__ParamMiddleware];
 
             for (const stackItem of layer.route.getStack()) {
                 const methodsToCompile = stackItem.methods.has("ALL")
@@ -958,7 +960,8 @@ export class Router {
             const middlewareNames = endpoint.handlers
                 .slice(0, Math.max(0, endpoint.handlers.length - 1))
                 .filter(isRouteHandler)
-                .map(handler => handler.name || "<anonymous>");
+                .map(handler => handler.name || "<anonymous>")
+                .filter(name => !name.startsWith("__internal__"));
 
             return {
                 method: endpoint.method,
