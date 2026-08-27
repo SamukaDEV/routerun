@@ -17,14 +17,38 @@ export type Method = keyof BunRoute;
 export type ILocals = Record<string, any>;
 export type IState = Record<string, any>;
 
-export interface IRequest {
+/**
+ * Extracts route parameter names from a path string literal.
+ * Example: "/aluno/:idaluno/turma/:idturma" -> "idaluno" | "idturma"
+ */
+export type ExtractParamKeys<Path extends string> =
+    Path extends `${string}:${infer Param}/${infer Rest}`
+        ? Param | ExtractParamKeys<`/${Rest}`>
+        : Path extends `${string}:${infer Param}`
+            ? Param
+            : never;
+
+/**
+ * Maps extracted parameter names to a typed dictionary of strings.
+ * If Path is a generic string (not a string literal) or contains no parameters, falls back to Record<string, string>.
+ */
+export type RouteParams<Path extends string> = string extends Path
+    ? Record<string, string>
+    : [ExtractParamKeys<Path>] extends [never]
+        ? Record<string, string>
+        : { [K in ExtractParamKeys<Path>]: string };
+
+export interface IRequest<
+    TParams extends Record<string, any> = Record<string, string>,
+    TState extends IState = IState
+> {
     raw: Request;
     method?: string;
     url?: string;
     originalUrl?: string;
     baseUrl?: string;
-    params: Record<string, string>;
-    state: IState;
+    params: TParams;
+    state: TState;
     counter: number;
     hit: number;
     ms: number;
@@ -42,20 +66,28 @@ export interface IResponse<TLocals extends ILocals = ILocals> {
 
 export type NextFunction = (err?: unknown) => void | Promise<void>;
 
-export type RouteHandler<Req extends IRequest = IRequest, Res extends IResponse = IResponse> = (
+export type RouteHandler<
+    TParams extends Record<string, any> = any,
+    Res extends IResponse = IResponse,
+    Req extends IRequest<TParams> = IRequest<TParams>
+> = (
     req: Req,
     res: Res,
     next: NextFunction,
 ) => Response | void | Promise<Response | void>;
 
-export type ErrorRouteHandler<Req extends IRequest = IRequest, Res extends IResponse = IResponse> = (
+export type ErrorRouteHandler<
+    TParams extends Record<string, any> = any,
+    Res extends IResponse = IResponse,
+    Req extends IRequest<TParams> = IRequest<TParams>
+> = (
     err: unknown,
     req: Req,
     res: Res,
     next: NextFunction,
 ) => Response | void | Promise<Response | void>;
 
-export type HandlerLike = RouteHandler | ErrorRouteHandler;
+export type HandlerLike = RouteHandler<any> | ErrorRouteHandler<any>;
 
 export type RouteHandlerList = RouteHandler[];
 export type ErrorHandlerList = ErrorRouteHandler[];

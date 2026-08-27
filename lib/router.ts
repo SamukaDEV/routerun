@@ -16,7 +16,8 @@ import type {
     StaticBundle,
     NextFunction,
     BunRoutes,
-    PrintRoutesOptions
+    PrintRoutesOptions,
+    RouteParams
 } from "./types";
 import {
     flattenHandlers,
@@ -134,10 +135,10 @@ function runHandlers(
     dispatch(initialError);
 }
 
-export class Route {
+export class Route<Path extends string = string> {
     private readonly stack: RouteStackItem[] = [];
 
-    constructor(public readonly path: string) { }
+    constructor(public readonly path: Path) { }
 
     private add(methodsToAdd: Array<Method | "ALL">, args: unknown[]) {
         const handlers = flattenHandlers(args);
@@ -153,38 +154,32 @@ export class Route {
 
         return this;
     }
-    // get(...handlers: RouteHandler[]): this;
-    get(...handlers: RouteHandler[]): this {
+
+    get(...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         return this.add(["GET"], handlers);
     }
 
-    // post(...handlers: RouteHandler[]): this;
-    post(...handlers: RouteHandler[]): this {
+    post(...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         return this.add(["POST"], handlers);
     }
 
-    // put(...handlers: RouteHandler[]): this;
-    put(...handlers: RouteHandler[]): this {
+    put(...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         return this.add(["PUT"], handlers);
     }
 
-    // patch(...handlers: RouteHandler[]): this;
-    patch(...handlers: RouteHandler[]): this {
+    patch(...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         return this.add(["PATCH"], handlers);
     }
 
-    // delete(...handlers: RouteHandler[]): this;
-    delete(...handlers: RouteHandler[]): this {
+    delete(...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         return this.add(["DELETE"], handlers);
     }
 
-    // options(...handlers: RouteHandler[]): this;
-    options(...handlers: RouteHandler[]): this {
+    options(...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         return this.add(["OPTIONS"], handlers);
     }
 
-    // all(...handlers: RouteHandler[]): this;
-    all(...handlers: RouteHandler[]): this {
+    all(...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         return this.add(["ALL"], handlers);
     }
 
@@ -219,7 +214,7 @@ export class Router {
         return callable;
     }
 
-    route(path: string) {
+    route<Path extends string>(path: Path): Route<Path> {
         if (!isValidPath(path)) {
             throw new Error(`Invalid path: ${path}`);
         }
@@ -239,10 +234,10 @@ export class Router {
     use(...handlers: ErrorRouteHandler[]): this;
     use(handlers: RouteHandler[], ...rest: RouteHandler[]): this;
     use(handlers: ErrorHandlerList, ...rest: ErrorRouteHandler[]): this;
-    use(path: string, ...handlers: RouteHandler[]): this;
-    use(path: string, ...handlers: ErrorRouteHandler[]): this;
-    use(path: string, handlers: RouteHandler[], ...rest: RouteHandler[]): this;
-    use(path: string, handlers: ErrorHandlerList, ...rest: ErrorRouteHandler[]): this;
+    use<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this;
+    use<Path extends string>(path: Path, ...handlers: Array<ErrorRouteHandler<RouteParams<Path>>>): this;
+    use<Path extends string>(path: Path, handlers: Array<RouteHandler<RouteParams<Path>>>, ...rest: Array<RouteHandler<RouteParams<Path>>>): this;
+    use<Path extends string>(path: Path, handlers: Array<ErrorHandlerList>, ...rest: Array<ErrorRouteHandler<RouteParams<Path>>>): this;
     use(path: string, router: Router): this;
     use(...args: unknown[]) {
         if (args.length === 0) {
@@ -302,44 +297,37 @@ export class Router {
         return this;
     }
 
-    // get(path: string, ...handlers: RouteHandler[]): this;
-    get(path: string, ...handlers: RouteHandler[]): this {
+    get<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         this.route(path).get(...handlers as RouteHandler[]);
         return this;
     }
 
-    // post(path: string, ...handlers: RouteHandler[]): this;
-    post(path: string, ...handlers: RouteHandler[]): this {
+    post<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         this.route(path).post(...handlers as RouteHandler[]);
         return this;
     }
 
-    // put(path: string, ...handlers: RouteHandler[]): this;
-    put(path: string, ...handlers: RouteHandler[]): this {
+    put<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         this.route(path).put(...handlers as RouteHandler[]);
         return this;
     }
 
-    // patch(path: string, ...handlers: RouteHandler[]): this;
-    patch(path: string, ...handlers: RouteHandler[]): this {
+    patch<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         this.route(path).patch(...handlers as RouteHandler[]);
         return this;
     }
 
-    // delete(path: string, ...handlers: RouteHandler[]): this;
-    delete(path: string, ...handlers: RouteHandler[]): this {
+    delete<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         this.route(path).delete(...handlers as RouteHandler[]);
         return this;
     }
 
-    // options(path: string, ...handlers: RouteHandler[]): this;
-    options(path: string, ...handlers: RouteHandler[]): this {
+    options<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         this.route(path).options(...handlers as RouteHandler[]);
         return this;
     }
 
-    // all(path: string, ...handlers: RouteHandler[]): this;
-    all(path: string, ...handlers: RouteHandler[]): this {
+    all<Path extends string>(path: Path, ...handlers: Array<RouteHandler<RouteParams<Path>>>): this {
         this.route(path).all(...handlers as RouteHandler[]);
         return this;
     }
