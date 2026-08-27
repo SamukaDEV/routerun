@@ -169,4 +169,52 @@ describe("Router", () => {
         expect(logs[0]).toContain("[200]");
     });
 
+    test("LoggerMiddleware respects enabled: false", async () => {
+        const logs: string[] = [];
+        const app = new Router();
+
+        app.use(LoggerMiddleware({
+            enabled: false,
+            output: (msg) => logs.push(msg),
+        }));
+
+        app.get("/test", (req, res) => res.json({ ok: true }));
+
+        const routes = app.toBunRoutes();
+        const handler = routes["/test"]?.GET;
+        expect(handler).toBeDefined();
+
+        const req = new Request("http://localhost/test") as any;
+        req.params = {};
+        const res = await handler!(req);
+
+        expect(logs.length).toBe(0);
+        expect(await res.json()).toEqual({ ok: true });
+    });
+
+    test("LoggerMiddleware respects enabled predicate function", async () => {
+        const logs: string[] = [];
+        const app = new Router();
+
+        app.use(LoggerMiddleware({
+            enabled: (req) => req.url?.includes("/log-me") ?? false,
+            output: (msg) => logs.push(msg),
+        }));
+
+        app.get("/log-me", (req, res) => res.json({ logged: true }));
+        app.get("/skip-me", (req, res) => res.json({ logged: false }));
+
+        const routes = app.toBunRoutes();
+
+        const req1 = new Request("http://localhost/skip-me") as any;
+        req1.params = {};
+        await routes["/skip-me"]?.GET!(req1);
+        expect(logs.length).toBe(0);
+
+        const req2 = new Request("http://localhost/log-me") as any;
+        req2.params = {};
+        await routes["/log-me"]?.GET!(req2);
+        expect(logs.length).toBe(1);
+    });
+
 });

@@ -73,6 +73,13 @@ export function LoggerMiddleware(options?: LoggerMiddlewareOptions): RouteHandle
     const output = options?.output ?? console.log;
 
     return async function logger(req: IRequest, res: IResponse, next: NextFunction) {
+        if (typeof options?.enabled === "boolean" && !options.enabled) {
+            return next();
+        }
+        if (typeof options?.enabled === "function" && !options.enabled(req)) {
+            return next();
+        }
+
         const start = performance.now();
         await next();
         const duration = (performance.now() - start).toFixed(2);

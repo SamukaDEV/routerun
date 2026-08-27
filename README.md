@@ -201,7 +201,11 @@ import Router, { LoggerMiddleware } from "routerun";
 const app = new Router();
 
 // Logger estilo morgan / express
-app.use(LoggerMiddleware({ timestamp: true, colors: true }));
+app.use(LoggerMiddleware({
+	timestamp: true,
+	colors: true,
+	enabled: process.env.NODE_ENV !== "production", // ativação condicional (boolean ou função com base na requisição)
+}));
 
 app.get("/", (_req, res) => res.text("ok"));
 app.get("/users/:id", (_req, res) => res.text("ok"));

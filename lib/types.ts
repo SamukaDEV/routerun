@@ -117,6 +117,12 @@ export interface PrintRoutesOptions {
 }
 
 export interface LoggerMiddlewareOptions {
+    /**
+     * Enable/disable the logger, or provide a predicate function based on request.
+     * Useful for disabling in production (e.g. `process.env.NODE_ENV !== "production"`).
+     * @default true
+     */
+    enabled?: boolean | ((req: IRequest) => boolean);
     timestamp?: boolean;
     colors?: boolean;
     output?: (message: string) => void;
