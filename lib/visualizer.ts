@@ -779,7 +779,7 @@ export function RouteViewerMiddleware(
     const normalizedBasePath = basePath.endsWith("/") && basePath.length > 1 ? basePath.slice(0, -1) : basePath;
     const jsonPath = `${normalizedBasePath}/json`;
 
-    const handler = async (req: IRequest, res: IResponse, next: NextFunction) => {
+    const handler: RouteHandler = async (req: IRequest, res: IResponse, next: NextFunction): Promise<any> => {
         // Check if disabled
         if (typeof options?.enabled === "boolean" && !options.enabled) {
             return next();
@@ -837,7 +837,7 @@ export function RouteViewerMiddleware(
         }
     }
 
-    return handler as RouteHandler;
+    return handler;
 }
 
 export const routeViewerMiddleware = RouteViewerMiddleware;
