@@ -72,7 +72,7 @@ export function LoggerMiddleware(options?: LoggerMiddlewareOptions): RouteHandle
     const useColors = options?.colors ?? true;
     const output = options?.output ?? console.log;
 
-    return async function logger(req: IRequest, res: IResponse, next: NextFunction) {
+    return async function __internal__LoggerMiddleware(req: IRequest, res: IResponse, next: NextFunction) {
         if (typeof options?.enabled === "boolean" && !options.enabled) {
             return next();
         }

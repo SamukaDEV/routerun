@@ -779,7 +779,7 @@ export function RouteViewerMiddleware(
     const normalizedBasePath = basePath.endsWith("/") && basePath.length > 1 ? basePath.slice(0, -1) : basePath;
     const jsonPath = `${normalizedBasePath}/json`;
 
-    const handler: RouteHandler = async (req: IRequest, res: IResponse, next: NextFunction): Promise<any> => {
+    const __internal__RouteViewerMiddleware: RouteHandler = async (req: IRequest, res: IResponse, next: NextFunction): Promise<any> => {
         // Check if disabled
         if (typeof options?.enabled === "boolean" && !options.enabled) {
             return next();
@@ -831,13 +831,13 @@ export function RouteViewerMiddleware(
     // If router instance has .get method, register the explicit GET endpoints
     // so it works directly with router.toBunRoutes() as well!
     if (router && typeof router.get === "function") {
-        router.get(normalizedBasePath, handler);
+        router.get(normalizedBasePath, __internal__RouteViewerMiddleware);
         if (options?.jsonEndpoint !== false) {
-            router.get(jsonPath, handler);
+            router.get(jsonPath, __internal__RouteViewerMiddleware);
         }
     }
 
-    return handler;
+    return __internal__RouteViewerMiddleware;
 }
 
 export const routeViewerMiddleware = RouteViewerMiddleware;
