@@ -122,6 +122,48 @@ export interface LoggerMiddlewareOptions {
     output?: (message: string) => void;
 }
 
+export interface RouteViewerOptions {
+    /**
+     * The path at which the Route Viewer UI will be available.
+     * @default "/_routes"
+     */
+    path?: string;
+    /**
+     * Dashboard title displayed in the browser tab and header.
+     * @default "Routerun Explorer"
+     */
+    title?: string;
+    /**
+     * Enable/disable the viewer, or provide a predicate function based on request.
+     * Useful for disabling in production (e.g. `process.env.NODE_ENV !== "production"`).
+     * @default true
+     */
+    enabled?: boolean | ((req: IRequest) => boolean);
+    /**
+     * Whether to show internal viewer routes in the listed routes.
+     * @default false
+     */
+    includeInternal?: boolean;
+    /**
+     * Whether to expose the JSON API endpoint at `${path}/json`.
+     * @default true
+     */
+    jsonEndpoint?: boolean;
+    /**
+     * Whether to show summary metrics/stats cards on top.
+     * @default true
+     */
+    showStats?: boolean;
+    /**
+     * Custom CSS rules to inject into the HTML page.
+     */
+    customCss?: string;
+    /**
+     * Custom HTML tags to inject into `<head>`.
+     */
+    customHead?: string;
+}
+
 export interface CompiledRoute {
     method: Method;
     path: string;

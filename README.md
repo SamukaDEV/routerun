@@ -192,20 +192,52 @@ const app = new Router();
 app.bundle("/", homepage);
 ```
 
-### 7) Inspeção de rotas
+### 7) Inspeção de rotas no terminal e UI Web
 
+#### Terminal / Console (`printRoutes` e `LoggerMiddleware`)
 ```ts
-import Router from "routerun";
+import Router, { LoggerMiddleware } from "routerun";
 
 const app = new Router();
+
+// Logger estilo morgan / express
+app.use(LoggerMiddleware({ timestamp: true, colors: true }));
 
 app.get("/", (_req, res) => res.text("ok"));
 app.get("/users/:id", (_req, res) => res.text("ok"));
 
-console.log(app.printRoutes());
-console.log(app.getRoutes());
-console.log(app.getCompiledRoutes());
+console.log(app.printRoutes({ colors: true }));
 ```
+
+#### Visualizador de Rotas Web (`RouteViewerMiddleware`)
+Interface HTML moderna, responsiva com dark mode, filtros por método HTTP, busca em tempo real e visualização JSON:
+
+```ts
+import Router, { RouteViewerMiddleware } from "routerun";
+
+const app = new Router();
+
+// Registra rotas da sua aplicação
+app.get("/api/v1/users", (_req, res) => res.json([]));
+app.post("/api/v1/users", (_req, res) => res.json({ ok: true }));
+app.get("/api/v1/users/:id", (req, res) => res.json({ id: req.params.id }));
+
+// Ativa a UI interativa no path desejado
+app.use(RouteViewerMiddleware(app, {
+	path: "/_debug/routes",
+	title: "API Explorer",
+	enabled: process.env.NODE_ENV !== "production", // desativa em produção
+}));
+
+Bun.serve({
+	port: 3000,
+	routes: app.toBunRoutes(),
+});
+```
+
+Acesse:
+- **UI Web:** `http://localhost:3000/_debug/routes`
+- **JSON Raw:** `http://localhost:3000/_debug/routes/json` (ou `?format=json`)
 
 ## Referência da API pública
 
@@ -215,6 +247,8 @@ console.log(app.getCompiledRoutes());
 | --- | --- | --- |
 | `Router` | classe | Estrutura principal para registro de middleware, rotas, sub-roteadores e compilação para Bun. |
 | `Route` | classe | Builder de handlers por método para um caminho específico. |
+| `LoggerMiddleware` | função | Middleware para log de requisições HTTP (método, status, duração e caminho). |
+| `RouteViewerMiddleware` | função | Middleware de inspeção com interface web HTML interativa e endpoint JSON. |
 | `createContext` | função | Cria `{ req, res }` com formato esperado pelos handlers da biblioteca. |
 | `compose` | função | Encadeia handlers (normais e de erro) e retorna função executora. |
 | `methods` | `string[]` | Lista de métodos em minúsculo derivada de métodos HTTP suportados internamente. |
@@ -233,8 +267,8 @@ console.log(app.getCompiledRoutes());
 | `bundle` | `bundle(path, htmlBundle)` | Associa `HTMLBundle` a um prefixo de rota no output do Bun. |
 | `handle` | `handle(req, res, callback)` | Processa cadeia de camadas manualmente (uso avançado/interno). |
 | `toBunRoutes` | `toBunRoutes()` | Compila tudo no formato `routes` aceito por `Bun.serve`. |
-| `printRoutes` | `printRoutes()` | Retorna string ordenada com métodos e caminhos compilados. |
-| `getRoutes` | `getRoutes()` | Retorna metadados resumidos das rotas compiladas. |
+| `printRoutes` | `printRoutes(options?)` | Retorna string formatada com métodos e caminhos compilados (com suporte a `colors` e `sort`). |
+| `getRoutes` | `getRoutes()` | Retorna metadados resumidos das rotas compiladas (método, path, middlewares). |
 | `getCompiledRoutes` | `getCompiledRoutes()` | Retorna métodos, paths e handlers já compilados. |
 
 ### Classe `Route`
@@ -245,10 +279,12 @@ console.log(app.getCompiledRoutes());
 | `get/post/put/patch/delete/options/all` | `(...handlers)` | Registra handlers para o método correspondente. |
 | `getStack` | `getStack()` | Retorna stack interna dos handlers registrados. |
 
-### Funções utilitárias exportadas
+### Funções utilitárias e Middlewares exportados
 
 | Função | Assinatura resumida | Descrição |
 | --- | --- | --- |
+| `LoggerMiddleware` | `LoggerMiddleware(options?)` | Middleware para log de requisições (`timestamp`, `colors`, `output`). |
+| `RouteViewerMiddleware` | `RouteViewerMiddleware(router, options?)` | Cria endpoint e UI HTML para visualizar rotas registradas. |
 | `createContext` | `createContext(request, options?)` | Constrói objetos `req` e `res` para execução de handlers. |
 | `compose` | `compose(handlers)` | Monta um executor assíncrono para uma lista de handlers. |
 
@@ -256,12 +292,14 @@ console.log(app.getCompiledRoutes());
 
 | Tipo | Finalidade |
 | --- | --- |
-| `IRequest` | Estrutura de request usada nos handlers. |
+| `IRequest` | Estrutura de request usada nos handlers (`params`, `state`, `cookies`, etc.). |
 | `IResponse` | Estrutura de response com helpers `json`, `text`, `send`, `end`. |
 | `NextFunction` | Função `next(err?)` para fluxo de middleware. |
-| `RouteHandler` | Handler padrão de rota/middleware. |
+| `RouteHandler` | Handler padrão de rota/middleware `(req, res, next)`. |
 | `ErrorRouteHandler` | Handler de erro com assinatura `(err, req, res, next)`. |
-| `RouterOptions` | Opções de configuração do `Router`. |
+| `RouterOptions` | Opções de configuração do `Router` (`maxNestingDepth`, `request`). |
+| `RouteViewerOptions` | Opções do visualizador (`path`, `title`, `enabled`, `jsonEndpoint`, `showStats`, `customCss`). |
+| `LoggerMiddlewareOptions` | Opções de log (`timestamp`, `colors`, `output`). |
 | `ContextOptions` | Opções de contexto (`cors`, `allowedOrigins`, `securityHeaders`). |
 | `RouteInfo` | Estrutura resumida usada por `getRoutes()`. |
 | `Method` | União de métodos HTTP suportados pelo tipo `BunRoute`. |
@@ -276,21 +314,25 @@ console.log(app.getCompiledRoutes());
 - `ContextOptions.cors` e `allowedOrigins` existem no tipo, mas a aplicação explícita de CORS no response **precisa ser validada/definida conforme sua necessidade**.
 - Não há método dedicado `head()` em `Router`/`Route`; se precisar de comportamento específico para `HEAD`, valide sua estratégia de mapeamento no Bun.
 
-## Contribuição
+## Testes
 
-Contribuições são bem-vindas.
-
-Fluxo sugerido:
-
-1. Faça um fork do projeto.
-2. Crie uma branch de feature/fix (`feat/minha-feature` ou `fix/meu-ajuste`).
-3. Implemente alterações e testes.
-4. Rode os testes:
+Executar suite completa de testes unitários:
 
 ```bash
 bun test
-# OR
-bun run run-tests
+```
+
+Executar scripts de testes e demonstrações isoladas:
+
+```bash
+# Teste dos middlewares (LoggerMiddleware e RouteViewerMiddleware)
+bun tests/middlewares.ts
+
+# Demonstração de printRoutes colorido
+bun tests/colors.ts
+
+# Inspeção de rotas compiladas
+bun tests/print-routes.ts
 ```
 
 5. Abra um Pull Request descrevendo contexto, mudanças e impacto.

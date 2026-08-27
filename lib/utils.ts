@@ -91,7 +91,8 @@ export function parseUrl(input: string | undefined): {
     }
 }
 
-export function sanitizeParams(params: Record<string, string>): Record<string, string> {
+export function sanitizeParams(params?: Record<string, string>): Record<string, string> {
+    if (!params) return {};
     const sanitized: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(params)) {
@@ -101,7 +102,7 @@ export function sanitizeParams(params: Record<string, string>): Record<string, s
         }
 
         // clear values with danger characters
-        sanitized[key] = value.replace(/[<>'"]/g, '');
+        sanitized[key] = typeof value === "string" ? value.replace(/[<>'"]/g, '') : value;
     }
 
     return sanitized;
@@ -137,6 +138,13 @@ export function createTrackedResponse(res: IResponse): IResponse & { __response?
         text(data, init) {
             const response = res.text(data, init);
             state.current = response;
+            return response;
+        },
+        send(data, init) {
+            const response = res.send(data, init);
+            if (response instanceof Response) {
+                state.current = response;
+            }
             return response;
         },
         end(data, encoding, callback) {
