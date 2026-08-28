@@ -16,7 +16,7 @@ app.delete("/users/:id", (req, res) => res.json({ deleted: true }));
 // Ativa a UI de visualização de rotas
 app.use(RouteViewerMiddleware(app, {
     path: "/_debug/routes",      // Caminho para acessar a UI (padrão: "/_routes")
-    title: "Minha API - Rotas",  // Título no navegador e header
+    title: "API Routes - Middleware",  // Título no navegador e header
     enabled: process.env.NODE_ENV !== "production", // Ativação condicional
     jsonEndpoint: true,          // Habilita endpoint /_debug/routes/json
     showStats: true,             // Exibe cards de resumo e contadores
