@@ -339,11 +339,13 @@
         .route-card {
             background: var(--bg-surface);
             border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
+            border-radius: 9px;
+            /* padding: 1rem 1.25rem; */
+            padding: .2rem;
             display: grid;
             grid-template-columns: auto 1fr auto;
-            align-items: center;
+            align-items: start;
+            /* gap: 1.25rem; */
             gap: 1.25rem;
             transition: all 0.2s ease;
         }
@@ -639,7 +641,7 @@
 
         function formatPath(path) {
             return path.replace(/(:[a-zA-Z0-9_]+)/g, '<span class="path-param">$1</span>')
-                .replace(/(\\*[\w]*)/g, '<span class="path-wildcard">$1</span>');
+                .replace(/(\*[\w]*)/g, '<span class="path-wildcard">$1</span>');
         }
 
         function renderRoutes() {
@@ -672,13 +674,13 @@
                 const mwTags = (route.middlewares && route.middlewares.length > 0)
                     ? `<div class="route-middlewares">
                         <span class="mw-label">Middlewares:</span>
-                        ${route.middlewares.map(mw => `<span class="mw-pill">${mw}</span>`).join("")}
+                        ${route.middlewares.map(mw => `<span class="mw-pill">${escapeHtml(mw)}</span>`).join("")}
                        </div>`
                     : "";
 
                 const isGet = route.method.toUpperCase() === "GET" && !route.path.includes(":");
                 const openBtn = isGet ? `
-                    <a href="${route.path}" target="_blank" class="action-btn" title="Open in new tab">
+                    <a href="${escapeHtml(route.path)}" target="_blank" class="action-btn" title="Open in new tab">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                         Open
                     </a>
@@ -686,19 +688,19 @@
 
                 return `
                     <div class="route-card" data-idx="${idx}">
-                        <span class="method-badge ${route.method.toUpperCase()}">${route.method}</span>
+                        <span class="method-badge ${escapeHtml(route.method.toUpperCase())}">${escapeHtml(route.method)}</span>
                         <div class="route-info">
                             <div class="route-path-wrapper">
-                                <span class="route-path">${formatPath(route.path)}</span>
+                                <span class="route-path">${formatPath(escapeHtml(route.path))}</span>
                             </div>
                             ${mwTags}
                         </div>
                         <div class="route-actions">
-                            <button class="action-btn" onclick="copyCurl('${route.method}', '${route.path}', this)" title="Copy cURL command">
+                            <button class="action-btn" onclick="copyCurl('${escapeHtml(route.method)}', '${escapeHtml(route.path)}', this)" title="Copy cURL command">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                 cURL
                             </button>
-                            <button class="action-btn" onclick="copyPath('${route.path}', this)" title="Copy Path">
+                            <button class="action-btn" onclick="copyPath('${escapeHtml(route.path)}', this)" title="Copy Path">
                                 Copy
                             </button>
                             ${openBtn}

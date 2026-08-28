@@ -1,4 +1,4 @@
-import Router, { RouteViewerMiddleware, LoggerMiddleware } from "../lib/index";
+import Router, { RouteViewerMiddleware, LoggerMiddleware, RouteHandler } from "../lib/index";
 
 const app = new Router();
 
@@ -7,11 +7,15 @@ app.use(LoggerMiddleware({ timestamp: true, colors: true }));
 
 app.get("/", (req, res) => res.json({ online: true }));
 
+const MID_TEST: RouteHandler = (req, res, next) => next()
+const Authentication: RouteHandler = (req, res, next) => next()
+const ContextMiddleware: RouteHandler = (req, res, next) => next()
+
 // Suas rotas da aplicação
 app.get("/users", (req, res) => res.json([{ id: 1, name: "Alice" }]));
-app.post("/users", (req, res) => res.json({ created: true }, { status: 201 }));
-app.get("/users/:id", (req, res) => res.json({ id: req.params.id }));
-app.delete("/users/:id", (req, res) => res.json({ deleted: true }));
+app.post("/users", MID_TEST, (req, res) => res.json({ created: true }, { status: 201 }));
+app.get("/users/:id", Authentication, (req, res) => res.json({ id: req.params.id }));
+app.delete("/users/:id", Authentication, ContextMiddleware, (req, res) => res.json({ deleted: true }));
 
 // Ativa a UI de visualização de rotas
 app.use(RouteViewerMiddleware(app, {

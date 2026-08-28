@@ -128,6 +128,24 @@ describe("RouteViewerMiddleware", () => {
         // Validate client script syntax in the HTML
         const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
         expect(scriptMatch).not.toBeNull();
-        expect(() => new Function(scriptMatch![1])).not.toThrow();
+
+        // Validate script and formatPath logic inside script
+        const mockDoc = {
+            getElementById: () => ({ addEventListener: () => {}, textContent: "", innerHTML: "" }),
+            querySelectorAll: () => [],
+        };
+        const formatPathFn = new Function("document", `
+            ${scriptMatch![1]}
+            return formatPath;
+        `)(mockDoc);
+
+        expect(formatPathFn("/users/:id")).toBe('/users/<span class="path-param">:id</span>');
+        expect(formatPathFn("/files/*")).toBe('/files/<span class="path-wildcard">*</span>');
+        expect(formatPathFn("/api/*path")).toBe('/api/<span class="path-wildcard">*path</span>');
+        expect(formatPathFn("/posts/:postId/comments/:commentId")).toBe(
+            '/posts/<span class="path-param">:postId</span>/comments/<span class="path-param">:commentId</span>'
+        );
     });
 });
+
+
