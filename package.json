@@ -1,9 +1,10 @@
 {
   "name": "routerun",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "A router to bun",
   "directories": {
-    "lib": "lib"
+    "lib": "lib",
+    "resources": "resources"
   },
   "main": "lib/index.ts",
   "scripts": {
@@ -29,7 +30,8 @@
     "LICENSE",
     "README.md",
     "lib/index.ts",
-    "lib/"
+    "lib/",
+    "resources/"
   ],
   "devDependencies": {
     "@types/bun": "^1.3.14",
