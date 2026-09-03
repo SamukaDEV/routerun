@@ -172,14 +172,14 @@ export function RouteViewerMiddleware(
                         });
                     }
 
-                    // Keep-alive heartbeat ping every 15s
+                    // Keep-alive heartbeat ping every 4s (strictly lower than Bun's 10s default idleTimeout)
                     heartbeatInterval = setInterval(() => {
                         try {
                             controller.enqueue(encoder.encode(`: ping\n\n`));
                         } catch {
                             clearInterval(heartbeatInterval);
                         }
-                    }, 15000);
+                    }, 4000);
                 },
                 cancel() {
                     if (unsubscribe) unsubscribe();

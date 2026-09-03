@@ -7,9 +7,9 @@ app.use(LoggerMiddleware({ timestamp: true, colors: true }));
 
 app.get("/", (req, res) => res.json({ online: true }));
 
-const MID_TEST: RouteHandler = (req, res, next) => next()
-const Authentication: RouteHandler = (req, res, next) => next()
-const ContextMiddleware: RouteHandler = (req, res, next) => next()
+const MID_TEST: RouteHandler = (req, res, next) => next();
+const Authentication: RouteHandler = (req, res, next) => next();
+const ContextMiddleware: RouteHandler = (req, res, next) => next();
 
 // Suas rotas da aplicação
 app.get("/users", (req, res) => res.json([{ id: 1, name: "Alice" }]));
