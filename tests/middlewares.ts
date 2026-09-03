@@ -3,7 +3,7 @@ import Router, { RouteViewerMiddleware, LoggerMiddleware, RouteHandler } from ".
 const app = new Router();
 
 // Middleware de Logs
-app.use(LoggerMiddleware({ timestamp: true, colors: true }));
+app.use(LoggerMiddleware({ enabled: true, timestamp: true, colors: true }));
 
 app.get("/", (req, res) => res.json({ online: true }));
 
