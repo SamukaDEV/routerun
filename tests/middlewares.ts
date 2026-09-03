@@ -26,10 +26,10 @@ app.use(RouteViewerMiddleware(app, {
     showStats: true,             // Exibe cards de resumo e contadores
 }));
 
-Bun.serve({
-    port: 3000,
+const server = Bun.serve({
+    port: 3192,
     routes: app.toBunRoutes(),
 });
 
-console.log("Servidor rodando em http://localhost:3000");
-console.log("Visualizador de rotas em http://localhost:3000/_debug/routes");
+console.log(`Servidor rodando em ${server.url}`);
+console.log(`Visualizador de rotas em ${server.url}_debug/routes`);

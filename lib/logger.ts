@@ -1,4 +1,6 @@
 import type { IRequest, IResponse, NextFunction, RouteHandler, LoggerMiddlewareOptions } from "./types";
+import { getDefaultLogStore, type RequestLogEntry } from "./log-store";
+import { parseUrl } from "./utils";
 
 export const ANSI = {
     reset: "\x1b[0m",
@@ -67,10 +69,20 @@ export function formatRouteLine(method: string, path: string, options?: { colors
     return `[${method.padEnd(8)}] ${path}`;
 }
 
+const DEFAULT_SENSITIVE_HEADERS = ["authorization", "proxy-authorization"];
+const DEFAULT_IGNORED_PATHS = [/\/logs\/stream$/, /\/logs\/clear$/];
+
 export function LoggerMiddleware(options?: LoggerMiddlewareOptions): RouteHandler {
     const showTimestamp = options?.timestamp ?? false;
     const useColors = options?.colors ?? true;
     const output = options?.output ?? console.log;
+    const captureBody = options?.captureBody ?? true;
+    const maxBodySize = options?.maxBodySize ?? 65536;
+    const sensitiveHeaders = options?.sanitizeHeaders ?? DEFAULT_SENSITIVE_HEADERS;
+    const ignorePaths = options?.ignorePaths ?? DEFAULT_IGNORED_PATHS;
+
+    // Resolve store: user store, default store, or null if explicitly false
+    const store = options?.store === false ? null : (options?.store ?? getDefaultLogStore());
 
     return async function __internal__LoggerMiddleware(req: IRequest, res: IResponse, next: NextFunction) {
         if (typeof options?.enabled === "boolean" && !options.enabled) {
@@ -80,13 +92,105 @@ export function LoggerMiddleware(options?: LoggerMiddlewareOptions): RouteHandle
             return next();
         }
 
-        const start = performance.now();
-        await next();
-        const duration = (performance.now() - start).toFixed(2);
+        const rawUrl = req.originalUrl ?? req.url ?? "/";
+        const parsed = parseUrl(rawUrl);
+        const pathname = parsed.pathname;
+        const search = parsed.search;
+
+        // Check if path is ignored
+        for (const pattern of ignorePaths) {
+            if (typeof pattern === "string" && (pathname === pattern || rawUrl === pattern)) {
+                return next();
+            } else if (pattern instanceof RegExp && (pattern.test(pathname) || pattern.test(rawUrl))) {
+                return next();
+            }
+        }
 
         const method = req.method ? req.method.toUpperCase() : "GET";
-        const url = req.originalUrl ?? req.url ?? "/";
+
+        // Capture headers safely
+        const headers: Record<string, string> = {};
+        if (req.raw?.headers) {
+            req.raw.headers.forEach((value, key) => {
+                const lower = key.toLowerCase();
+                if (sensitiveHeaders.includes(lower)) {
+                    headers[key] = "********";
+                } else {
+                    headers[key] = value;
+                }
+            });
+        }
+
+        // Capture query parameters
+        const query: Record<string, string> = {};
+        if (search) {
+            const sp = new URLSearchParams(search);
+            sp.forEach((value, key) => {
+                query[key] = value;
+            });
+        }
+
+        // Pre-clone and read body if applicable
+        let capturedBody: any = undefined;
+        let capturedBodyRaw: string | undefined = undefined;
+        const canHaveBody = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
+        if (captureBody && canHaveBody && req.raw) {
+            try {
+                const clone = req.raw.clone();
+                const text = await clone.text();
+                if (text && text.length <= maxBodySize) {
+                    capturedBodyRaw = text;
+                    const cType = headers["content-type"] || headers["Content-Type"] || "";
+                    if (cType.includes("application/json")) {
+                        try {
+                            capturedBody = JSON.parse(text);
+                        } catch {
+                            capturedBody = text;
+                        }
+                    } else {
+                        capturedBody = text;
+                    }
+                } else if (text && text.length > maxBodySize) {
+                    capturedBodyRaw = text.slice(0, maxBodySize) + "... [truncated]";
+                    capturedBody = capturedBodyRaw;
+                }
+            } catch {
+                // If clone fails (e.g. stream already closed), silently proceed
+            }
+        }
+
+        const start = performance.now();
+        await next();
+        const durationDiff = performance.now() - start;
+        const duration = durationDiff.toFixed(2);
+        const durationMs = Number(durationDiff.toFixed(2));
+
         const status = res.__response?.status ?? 200;
+
+        // Dispatch to RequestLogStore
+        if (store) {
+            const entry: RequestLogEntry = {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                timestamp: new Date().toISOString(),
+                timeStr: new Date().toLocaleTimeString(),
+                method,
+                url: rawUrl,
+                pathname,
+                search,
+                status,
+                duration: `+${duration}ms`,
+                durationMs,
+                ip: headers["x-forwarded-for"] || headers["x-real-ip"] || undefined,
+                headers,
+                params: { ...(req.params || {}) },
+                query,
+                body: capturedBody,
+                bodyRaw: capturedBodyRaw,
+                contentType: headers["content-type"] || headers["Content-Type"],
+            };
+            store.add(entry);
+        }
 
         const parts: string[] = [];
 
@@ -98,7 +202,7 @@ export function LoggerMiddleware(options?: LoggerMiddlewareOptions): RouteHandle
         const methodFormatted = useColors ? `[${colorizeMethod(method, true)}]` : `[${method}]`;
         parts.push(methodFormatted);
 
-        const pathFormatted = colorizePath(url, useColors);
+        const pathFormatted = colorizePath(rawUrl, useColors);
         parts.push(pathFormatted);
 
         const statusFormatted = useColors ? `[${colorizeStatus(status, true)}]` : `[${status}]`;

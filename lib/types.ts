@@ -126,6 +126,30 @@ export interface LoggerMiddlewareOptions {
     timestamp?: boolean;
     colors?: boolean;
     output?: (message: string) => void;
+    /**
+     * Custom RequestLogStore instance to record requests into.
+     * If not specified, automatically connects to the default/shared log store.
+     */
+    store?: import("./log-store").RequestLogStore | false;
+    /**
+     * Whether to capture the request body (POST, PUT, PATCH, DELETE).
+     * @default true
+     */
+    captureBody?: boolean;
+    /**
+     * Maximum body size in bytes to buffer and capture for logs.
+     * @default 65536 (64 KB)
+     */
+    maxBodySize?: number;
+    /**
+     * Array of header names to redact/mask in captured logs.
+     * @default ["authorization", "proxy-authorization"]
+     */
+    sanitizeHeaders?: string[];
+    /**
+     * Paths or patterns to ignore from logging and store collection (e.g. streaming endpoints).
+     */
+    ignorePaths?: (string | RegExp)[];
 }
 
 export interface RouteViewerOptions {
@@ -168,6 +192,21 @@ export interface RouteViewerOptions {
      * Custom HTML tags to inject into `<head>`.
      */
     customHead?: string;
+    /**
+     * Custom RequestLogStore instance to read live logs from.
+     * If not specified, automatically connects to the default/shared log store.
+     */
+    store?: import("./log-store").RequestLogStore | false;
+    /**
+     * Whether to enable the live request logs tab and SSE streaming.
+     * @default true
+     */
+    liveLogs?: boolean;
+    /**
+     * Whether to expose the JSON logs endpoint at `${path}/logs`.
+     * @default true
+     */
+    logsEndpoint?: boolean;
 }
 
 export interface CompiledRoute {
@@ -195,3 +234,6 @@ export interface RouterLike {
 }
 
 export type Middleware = RouteHandler;
+
+export type { RequestLogEntry, RequestLogStoreOptions, LogListener } from "./log-store";
+export type { RequestLogStore } from "./log-store";
