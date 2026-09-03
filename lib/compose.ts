@@ -86,16 +86,25 @@ export function compose(
             ));
 
             if (result !== undefined) {
+                if (result instanceof Response) {
+                    (res as any).__response ??= result;
+                }
                 return result;
             }
 
             const response = trackedRes.__response;
 
             if (response instanceof Response) {
+                (res as any).__response ??= response;
                 return response;
             }
 
-            return downstreamResponse;
+            if (downstreamResponse instanceof Response) {
+                (res as any).__response ??= downstreamResponse;
+                return downstreamResponse;
+            }
+
+            return undefined;
         }
 
         return dispatch(0);

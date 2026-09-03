@@ -46,6 +46,10 @@ describe("Logger & Visualizer Integration", () => {
         // Body captured and parsed
         expect(log.body).toEqual({ name: "Alice", email: "alice@example.com" });
 
+        // Response captured and parsed as JSON
+        expect(log.responseContentType).toContain("application/json");
+        expect(log.responseBody).toEqual({ success: true, created: true });
+
         server.stop();
     });
 

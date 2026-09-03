@@ -1382,13 +1382,68 @@
                         <tr><td class="kv-key">Status</td><td class="kv-val"><span class="status-badge ${sCls}">${log.status}</span></td></tr>
                         <tr><td class="kv-key">Duration</td><td class="kv-val" style="color:#38bdf8;">${escapeHtml(log.duration || "")}</td></tr>
                         <tr><td class="kv-key">Client IP</td><td class="kv-val">${escapeHtml(log.ip || "127.0.0.1")}</td></tr>
+                        <tr><td class="kv-key">Response Content-Type</td><td class="kv-val">${escapeHtml(log.responseContentType || "None")}</td></tr>
                         <tr><td class="kv-key">Timestamp</td><td class="kv-val">${escapeHtml(log.timestamp || "")}</td></tr>
                     </table>
+                `;
+            } else if (currentDetailTab === "response") {
+                const resHeadersEntries = Object.entries(log.responseHeaders || {});
+                let bodyHtml = "";
+
+                if (log.responseBody === undefined && !log.responseBodyRaw) {
+                    bodyHtml = `
+                        <div style="padding: 1.5rem 1rem; text-align: center; color: var(--text-dim); font-size: 0.85rem; background: var(--bg-base); border-radius: 8px; border: 1px dashed var(--border-subtle); margin-bottom: 1.25rem;">
+                            No response body content was captured for this request.
+                        </div>
+                    `;
+                } else {
+                    const isJson = typeof log.responseBody === "object" && log.responseBody !== null;
+                    const formatted = isJson ? JSON.stringify(log.responseBody, null, 2) : (log.responseBodyRaw || String(log.responseBody));
+                    bodyHtml = `
+                        <div class="code-viewer-wrap" style="margin-bottom: 1.25rem;">
+                            <div class="code-viewer-bar" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.75rem; font-weight: 700; color: ${isJson ? 'var(--get-color)' : 'var(--text-muted)'}; font-family: 'JetBrains Mono', monospace;">
+                                    ${isJson ? '● JSON Response' : '● Raw Response'}
+                                </span>
+                                <button class="action-btn" onclick="copyGeneric('${escapeHtml(formatted.replace(/'/g, "\\'"))}', this)">Copy Response</button>
+                            </div>
+                            <pre class="code-viewer" style="border-color: ${isJson ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}">${escapeHtml(formatted)}</pre>
+                        </div>
+                    `;
+                }
+
+                let headersHtml = "";
+                if (resHeadersEntries.length > 0) {
+                    headersHtml = `
+                        <div style="margin-top: 1rem;">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-dim); margin-bottom: 0.5rem; letter-spacing: 0.05em;">
+                                Response Headers (${resHeadersEntries.length})
+                            </div>
+                            <table class="kv-table">
+                                <thead><tr><th>Header</th><th>Value</th></tr></thead>
+                                <tbody>
+                                    ${resHeadersEntries.map(([k, v]) => `<tr><td class="kv-key">${escapeHtml(k)}</td><td class="kv-val">${escapeHtml(v)}</td></tr>`).join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                tabContent = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="status-badge ${sCls}" style="font-size: 0.85rem; padding: 0.3rem 0.6rem;">Status: ${log.status}</span>
+                            <span style="font-size: 0.8rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">${escapeHtml(log.duration || "")}</span>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">${escapeHtml(log.responseContentType || "")}</span>
+                    </div>
+                    ${bodyHtml}
+                    ${headersHtml}
                 `;
             } else if (currentDetailTab === "headers") {
                 const hEntries = Object.entries(log.headers || {});
                 if (hEntries.length === 0) {
-                    tabContent = `<p style="color: var(--text-dim); font-size:0.85rem;">No headers captured.</p>`;
+                    tabContent = `<p style="color: var(--text-dim); font-size:0.85rem;">No request headers captured.</p>`;
                 } else {
                     tabContent = `
                         <div class="code-viewer-bar">
@@ -1471,8 +1526,9 @@
 
                 <div class="detail-subtabs">
                     <button class="detail-subtab-btn ${currentDetailTab === 'overview' ? 'active' : ''}" onclick="switchDetailTab('overview')">Overview</button>
-                    <button class="detail-subtab-btn ${currentDetailTab === 'headers' ? 'active' : ''}" onclick="switchDetailTab('headers')">Headers (${Object.keys(log.headers || {}).length})</button>
-                    <button class="detail-subtab-btn ${currentDetailTab === 'body' ? 'active' : ''}" onclick="switchDetailTab('body')">Body ${log.bodyRaw ? '🟢' : ''}</button>
+                    <button class="detail-subtab-btn ${currentDetailTab === 'response' ? 'active' : ''}" onclick="switchDetailTab('response')">Response ${log.responseBodyRaw ? '<span style="color:#10b981; margin-left:2px;">●</span>' : ''}</button>
+                    <button class="detail-subtab-btn ${currentDetailTab === 'headers' ? 'active' : ''}" onclick="switchDetailTab('headers')">Req Headers (${Object.keys(log.headers || {}).length})</button>
+                    <button class="detail-subtab-btn ${currentDetailTab === 'body' ? 'active' : ''}" onclick="switchDetailTab('body')">Req Body ${log.bodyRaw ? '<span style="color:#38bdf8; margin-left:2px;">●</span>' : ''}</button>
                     <button class="detail-subtab-btn ${currentDetailTab === 'query' ? 'active' : ''}" onclick="switchDetailTab('query')">Query (${Object.keys(log.query || {}).length})</button>
                     <button class="detail-subtab-btn ${currentDetailTab === 'curl' ? 'active' : ''}" onclick="switchDetailTab('curl')">cURL</button>
                 </div>

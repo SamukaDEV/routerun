@@ -160,7 +160,13 @@ export function createTrackedResponse(res: IResponse): IResponse & { __response?
             return fallback;
         },
         get __response() {
-            return state.current;
+            return state.current ?? res.__response;
+        },
+        set __response(value: Response | undefined) {
+            state.current = value;
+            if (res) {
+                res.__response = value;
+            }
         },
     } as IResponse & { __response?: Response };
 }

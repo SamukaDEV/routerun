@@ -16,6 +16,10 @@ export interface RequestLogEntry {
     body?: any;
     bodyRaw?: string;
     contentType?: string;
+    responseHeaders?: Record<string, string>;
+    responseBody?: any;
+    responseBodyRaw?: string;
+    responseContentType?: string;
 }
 
 export interface RequestLogStoreOptions {

@@ -166,7 +166,43 @@ export function LoggerMiddleware(options?: LoggerMiddlewareOptions): RouteHandle
         const duration = durationDiff.toFixed(2);
         const durationMs = Number(durationDiff.toFixed(2));
 
-        const status = res.__response?.status ?? 200;
+        const resObj = res.__response;
+        const status = resObj?.status ?? 200;
+
+        // Capture response headers and response body
+        const responseHeaders: Record<string, string> = {};
+        let responseBody: any = undefined;
+        let responseBodyRaw: string | undefined = undefined;
+        let responseContentType: string | undefined = undefined;
+
+        if (resObj) {
+            if (resObj.headers) {
+                resObj.headers.forEach((val, key) => {
+                    responseHeaders[key] = val;
+                });
+                responseContentType = resObj.headers.get("content-type") || undefined;
+            }
+
+            try {
+                const resClone = resObj.clone();
+                const resText = await resClone.text();
+                if (resText) {
+                    if (resText.length <= maxBodySize) {
+                        responseBodyRaw = resText;
+                        try {
+                            responseBody = JSON.parse(resText);
+                        } catch {
+                            responseBody = resText;
+                        }
+                    } else {
+                        responseBodyRaw = resText.slice(0, maxBodySize) + "... [truncated]";
+                        responseBody = responseBodyRaw;
+                    }
+                }
+            } catch {
+                // If clone fails, proceed safely
+            }
+        }
 
         // Dispatch to RequestLogStore
         if (store) {
@@ -188,6 +224,10 @@ export function LoggerMiddleware(options?: LoggerMiddlewareOptions): RouteHandle
                 body: capturedBody,
                 bodyRaw: capturedBodyRaw,
                 contentType: headers["content-type"] || headers["Content-Type"],
+                responseHeaders,
+                responseBody,
+                responseBodyRaw,
+                responseContentType,
             };
             store.add(entry);
         }

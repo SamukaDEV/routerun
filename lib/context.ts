@@ -60,6 +60,9 @@ export function createContext(
         },
         get __response() {
             return responseState.current;
+        },
+        set __response(value: Response | undefined) {
+            responseState.current = value;
         }
     } as IResponse & { __response?: Response };
 
